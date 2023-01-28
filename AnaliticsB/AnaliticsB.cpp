@@ -74,12 +74,14 @@ void BlockAnalytics() {
         bool IsExisting = false;
         for (auto& line : AllHostLines) {
             if (line.find(url) != std::string::npos) {
+                printf("Pre Blocked %s in hosts file\n", url.c_str());
                 IsExisting = true;
                 break;
             }
         }
 
         if (!IsExisting) {
+            printf("Blocked %s in hosts file\n", url.c_str());
             AllHostLines.push_back("127.0.0.1 " + url);
         }
     }
@@ -95,7 +97,9 @@ int main(int argc, char* argv[])
 {
     std::cout << "Vrchat Analytics Blocker" << std::endl;
     std::cout << "Press any key to continue..." << std::endl;
-    std::cin.get();
+    _getch();
     BlockAnalytics();
-    return 0;
+    system("ipconfig /flushdns");
+    std::cout << "Done" << std::endl;
+    _getch();
 }
