@@ -60,12 +60,12 @@ std::unordered_set<std::string> Blocklist = {
 std::filesystem::path hosts_file = R"(C:\Windows\System32\drivers\etc\hosts)";
 std::vector<std::string> all_host_lines;
 
-bool IsElevated() {
+bool is_elevated() {
     return  (std::filesystem::status(hosts_file).permissions() & std::filesystem::perms::owner_write) != std::filesystem::perms::none;
 }
 
-void BlockAnalytics() {
-    if(!IsElevated())
+void block_analytics() {
+    if(!is_elevated())
     {
         logging::Log("Application not running with elevated privileges");
         return;
@@ -78,7 +78,17 @@ void BlockAnalytics() {
     for (auto& item : Blocklist) {
         bool found = false;
         for (auto& hl : all_host_lines) {
+            
+            
             if (hl.find(item) != std::string::npos) {
+                if(!hl.find("0.0.0.0 " + item))
+                {
+                    found = true;
+                    logging::Log("host " + item + " Detected Blocked Incorrectly Fixing");
+                    all_host_lines.erase(std::remove(all_host_lines.begin(), all_host_lines.end(), hl), all_host_lines.end());
+                    all_host_lines.push_back("0.0.0.0 " + item);
+                    break;
+                }
                 found = true;
                 logging::Log("host " + item + " found");
                 break;
@@ -105,7 +115,7 @@ int main() {
     std::cout << "Vrchat Analytics Blocker" << std::endl;
     std::cout << "Press any key to continue..." << std::endl;
     _getch();
-    BlockAnalytics();
+    block_analytics();
     _getch();
     return 0;
 }
