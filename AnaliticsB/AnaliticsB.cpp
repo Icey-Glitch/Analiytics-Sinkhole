@@ -10,7 +10,10 @@
 #include <iostream>
 
 
-std::unordered_set<std::string> Blocklist = {
+/**
+ * \brief 
+ */
+std::unordered_set<std::string> blocklist = {
     // VRChat
     "api.amplitude.com",
     "api2.amplitude.com",
@@ -76,7 +79,7 @@ void block_analytics() {
     while (std::getline(file, line)) {
         all_host_lines.push_back(line);
     }
-    for (auto& item : Blocklist) {
+    for (auto& item : blocklist) {
         bool found = false;
         for (auto& hl : all_host_lines) {
             
@@ -117,8 +120,7 @@ int main() {
     _getch();
     block_analytics();
     logging::log("would you like to clear the temp hosts file? y/n");
-    char c = _getch();
-    if (c == 'y') {
+    if (const char c = _getch(); c == 'y') {
         Temp_cleaner::delete_temp_files(Temp_cleaner::get_temp_folder());
         logging::log("hosts file cleared, Press any key to exit...");
         _getch();

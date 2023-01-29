@@ -11,7 +11,11 @@
 std::ofstream logfile("logfile.txt", std::ios::app | std::ios::out);
 
 void logging::write_to_console(const std::string& log_entry) {
-    std::clog << log_entry;
+    try {
+        std::clog << log_entry;
+    } catch (const std::exception& e) {
+        std::cerr << "Error writing to console: " << e.what() << std::endl;
+    }
 }
 
 static void clear_log_file(const std::string& file_name) {
