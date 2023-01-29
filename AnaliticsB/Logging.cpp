@@ -43,13 +43,10 @@ void logging::log(const std::string& message) {
     }
     std::string log_entry = "[" + time::get_current_time() + "] " + message + "\n";
     logfile << log_entry;
-
-    const auto write_console_future = std::async(std::launch::async, &logging::write_to_console, log_entry);
-    const std::future_status status = write_console_future.wait_for(std::chrono::seconds(5));
-    if (status == std::future_status::timeout) {
-        std::cerr << "Error: Timeout occured while writing to console.\n";
-    }
+    
+    std::thread t1(write_to_console, log_entry);
     logfile.flush();
     logfile.close();
+    t1.join();
 }
 
