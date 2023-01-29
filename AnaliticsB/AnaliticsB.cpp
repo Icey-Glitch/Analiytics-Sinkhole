@@ -59,6 +59,22 @@ std::vector<std::string> Blocklist = {
     "vortex.data.microsoft.com"
 };
 
+BOOL IsElevated( ) {
+    BOOL fRet = FALSE;
+    HANDLE hToken = NULL;
+    if( OpenProcessToken( GetCurrentProcess( ),TOKEN_QUERY,&hToken ) ) {
+        TOKEN_ELEVATION Elevation;
+        DWORD cbSize = sizeof( TOKEN_ELEVATION );
+        if( GetTokenInformation( hToken, TokenElevation, &Elevation, sizeof( Elevation ), &cbSize ) ) {
+            fRet = Elevation.TokenIsElevated;
+        }
+    }
+    if( hToken ) {
+        CloseHandle( hToken );
+    }
+    return fRet;
+}
+
 void BlockAnalytics() {
     std::string HostsFile = "C:\\Windows\\System32\\drivers\\etc\\hosts";
     std::vector<std::string> AllHostLines;
@@ -74,7 +90,8 @@ void BlockAnalytics() {
         bool IsExisting = false;
         for (auto& line : AllHostLines) {
             if (line.find(url) != std::string::npos) {
-                printf("Pre Blocked %s in hosts file\n", url.c_str());
+                printf("Pre Blocked %s in hosts file changing to make sure\n", url.c_str());
+                AllHostLines.push_back("0.0.0.0" + url);
                 IsExisting = true;
                 break;
             }
@@ -82,7 +99,7 @@ void BlockAnalytics() {
 
         if (!IsExisting) {
             printf("Blocked %s in hosts file\n", url.c_str());
-            AllHostLines.push_back("127.0.0.1 " + url);
+            AllHostLines.push_back("0.0.0.0" + url);
         }
     }
 
@@ -95,11 +112,16 @@ void BlockAnalytics() {
 
 int main(int argc, char* argv[])
 {
-    std::cout << "Vrchat Analytics Blocker" << std::endl;
-    std::cout << "Press any key to continue..." << std::endl;
-    _getch();
-    BlockAnalytics();
-    system("ipconfig /flushdns");
-    std::cout << "Done" << std::endl;
+    if(IsElevated())
+    {
+        std::cout << "Vrchat Analytics Blocker" << std::endl;
+        std::cout << "Press any key to continue..." << std::endl;
+        _getch();
+        BlockAnalytics();
+        system("ipconfig /flushdns");
+        std::cout << "Done" << std::endl;
+        _getch();
+    }
+    std::cout << "Please run as admin" << std::endl;
     _getch();
 }
