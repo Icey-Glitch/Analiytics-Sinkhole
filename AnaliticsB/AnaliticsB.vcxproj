@@ -160,10 +160,12 @@
   <ItemGroup>
     <ClCompile Include="AnaliticsB.cpp" />
     <ClCompile Include="Logging.cpp" />
+    <ClCompile Include="Temp_cleaner.cpp" />
     <ClCompile Include="time.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Logging.h" />
+    <ClInclude Include="Temp_cleaner.h" />
     <ClInclude Include="time.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,5 +1,6 @@
 #include "Logging.h"
 #include "time.h"
+#include "Temp_cleaner.h"
 
 #include <unordered_set>
 #include <fstream>
@@ -67,7 +68,7 @@ bool is_elevated() {
 void block_analytics() {
     if(!is_elevated())
     {
-        logging::Log("Application not running with elevated privileges");
+        logging::log("Application not running with elevated privileges");
         return;
     }
     std::ifstream file(hosts_file);
@@ -84,19 +85,19 @@ void block_analytics() {
                 if(!hl.find("0.0.0.0 " + item))
                 {
                     found = true;
-                    logging::Log("host " + item + " Detected Blocked Incorrectly Fixing");
+                    logging::log("host " + item + " Detected Blocked Incorrectly Fixing");
                     all_host_lines.erase(std::remove(all_host_lines.begin(), all_host_lines.end(), hl), all_host_lines.end());
                     all_host_lines.push_back("0.0.0.0 " + item);
                     break;
                 }
                 found = true;
-                logging::Log("host " + item + " found");
+                logging::log("host " + item + " found");
                 break;
             }
         }
         if (!found) {
             all_host_lines.push_back("0.0.0.0 " + item);
-            logging::Log("host " + item + " found");
+            logging::log("host " + item + " found");
         }
     }
 
@@ -105,18 +106,23 @@ void block_analytics() {
         ofile << hl << std::endl;
     }
     ofile.close();
-    logging::Log("Analytics blocked successfully");
+    logging::log("Analytics blocked successfully");
 }
 
 
 
 int main() {
-    logging::logInit("logging started at ");
-    std::cout << "Vrchat Analytics Blocker" << std::endl;
-    std::cout << "Press any key to continue..." << std::endl;
+    logging::log_init("logging started at ");
+    logging::log("Vrchat Analytics Blocker"); logging::log("Press any key to continue...");
     _getch();
     block_analytics();
-    _getch();
+    logging::log("would you like to clear the temp hosts file? y/n");
+    char c = _getch();
+    if (c == 'y') {
+        Temp_cleaner::delete_temp_files(Temp_cleaner::get_temp_folder());
+        logging::log("hosts file cleared, Press any key to exit...");
+        _getch();
+    }
     return 0;
 }
 

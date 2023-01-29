@@ -1,41 +1,55 @@
 ﻿#include "Logging.h"
+#include <iostream>
+#include <fstream>
+#include <chrono>
+#include <thread>
+#include <future>
+#include <iomanip>
 
 #include "time.h"
 
-#include <fstream>
-#include <iostream>
-#include <ostream>
-#include <sstream>
+std::ofstream logfile("logfile.txt", std::ios::app | std::ios::out);
 
-std::ofstream logfile("logfile.txt", std::ios_base::app | std::ios_base::out);
+void logging::write_to_console(const std::string& log_entry) {
+    std::clog << log_entry;
+}
 
-void clear_log_file(const std::string& file_name) {
+static void clear_log_file(const std::string& file_name) {
+    logfile.close();
     std::ofstream log_file(file_name, std::ios::trunc);
     if (!log_file.is_open()) {
         std::cerr << "Error: failed to open log file '" << file_name << "'" << std::endl;
     }
+    log_file.close();
+    logfile.open(file_name, std::ios::app | std::ios::out);
 }
 
-void logging::logInit(const std::string& message) {
+void logging::log_init(const std::string& message) {
     clear_log_file("logfile.txt");
     std::ofstream log_file("logfile.txt", std::ios::app);
     if (!log_file.is_open()) {
         std::cerr << "Error: failed to open log file" << std::endl;
+        logging::write_to_console("Error: failed to open log file\n");
         return;
     }
     log_file << "[" << time::get_current_time() << "] " << message << std::endl;
 }
 
-void logging::Log(const std::string& message) {
+void logging::log(const std::string& message) {
     std::ofstream logfile("logfile.txt", std::ios_base::app | std::ios_base::out);
-    std::stringstream ss;
     if (!logfile.is_open()) {
-        std::cout << "Error opening logfile" << std::endl;
+        std::cerr << "Error opening logfile" << std::endl;
         return;
     }
-    ss << "[" << time::get_current_time() << "] " << message << std::endl;
-    std::cout << ss.str();
-    logfile << "[" << time::get_current_time() << "] " << message << std::endl;
+    std::string log_entry = "[" + time::get_current_time() + "] " + message + "\n";
+    logfile << log_entry;
+
+    const auto write_console_future = std::async(std::launch::async, &logging::write_to_console, log_entry);
+    const std::future_status status = write_console_future.wait_for(std::chrono::seconds(5));
+    if (status == std::future_status::timeout) {
+        std::cerr << "Error: Timeout occured while writing to console.\n";
+    }
+    logfile.flush();
     logfile.close();
 }
 

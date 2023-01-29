@@ -18,7 +18,7 @@ auto time::get_current_time() -> std::string
         }
         return buffer;
     } catch (const std::exception& e) {
-        logging::Log(e.what());
+        logging::log(e.what());
         throw;
     }
 }
