@@ -1,17 +1,15 @@
+#include "Logging.h"
+#include "time.h"
 
-#include <iostream>
+#include <unordered_set>
+#include <fstream>
+#include <string>
+#include <filesystem>
 #include <conio.h>
 #include <iostream>
-#include <fstream>
-#include <vector>
-#include <string>
-#include <Windows.h>
 
 
-
-
-
-std::vector<std::string> Blocklist = {
+std::unordered_set<std::string> Blocklist = {
     // VRChat
     "api.amplitude.com",
     "api2.amplitude.com",
@@ -59,69 +57,56 @@ std::vector<std::string> Blocklist = {
     "vortex.data.microsoft.com"
 };
 
-BOOL IsElevated( ) {
-    BOOL fRet = FALSE;
-    HANDLE hToken = NULL;
-    if( OpenProcessToken( GetCurrentProcess( ),TOKEN_QUERY,&hToken ) ) {
-        TOKEN_ELEVATION Elevation;
-        DWORD cbSize = sizeof( TOKEN_ELEVATION );
-        if( GetTokenInformation( hToken, TokenElevation, &Elevation, sizeof( Elevation ), &cbSize ) ) {
-            fRet = Elevation.TokenIsElevated;
-        }
-    }
-    if( hToken ) {
-        CloseHandle( hToken );
-    }
-    return fRet;
+std::filesystem::path hosts_file = R"(C:\Windows\System32\drivers\etc\hosts)";
+std::vector<std::string> all_host_lines;
+
+bool IsElevated() {
+    return  (std::filesystem::status(hosts_file).permissions() & std::filesystem::perms::owner_write) != std::filesystem::perms::none;
 }
 
 void BlockAnalytics() {
-    std::string HostsFile = "C:\\Windows\\System32\\drivers\\etc\\hosts";
-    std::vector<std::string> AllHostLines;
-
-    std::ifstream file(HostsFile);
+    if(!IsElevated())
+    {
+        logging::Log("Application not running with elevated privileges");
+        return;
+    }
+    std::ifstream file(hosts_file);
     std::string line;
-    while (std::getline(file, line))
-        AllHostLines.push_back(line);
-
-    file.close();
-
-    for (auto& url : Blocklist) {
-        bool IsExisting = false;
-        for (auto& line : AllHostLines) {
-            if (line.find(url) != std::string::npos) {
-                printf("Pre Blocked %s in hosts file changing to make sure\n", url.c_str());
-                AllHostLines.push_back("0.0.0.0" + url);
-                IsExisting = true;
+    while (std::getline(file, line)) {
+        all_host_lines.push_back(line);
+    }
+    for (auto& item : Blocklist) {
+        bool found = false;
+        for (auto& hl : all_host_lines) {
+            if (hl.find(item) != std::string::npos) {
+                found = true;
+                logging::Log("host " + item + " found");
                 break;
             }
         }
-
-        if (!IsExisting) {
-            printf("Blocked %s in hosts file\n", url.c_str());
-            AllHostLines.push_back("0.0.0.0" + url);
+        if (!found) {
+            all_host_lines.push_back("0.0.0.0 " + item);
+            logging::Log("host " + item + " found");
         }
     }
 
-    std::ofstream outfile(HostsFile);
-    for (auto& line : AllHostLines)
-        outfile << line << std::endl;
-
-    outfile.close();
-}
-
-int main(int argc, char* argv[])
-{
-    if(IsElevated())
-    {
-        std::cout << "Vrchat Analytics Blocker" << std::endl;
-        std::cout << "Press any key to continue..." << std::endl;
-        _getch();
-        BlockAnalytics();
-        system("ipconfig /flushdns");
-        std::cout << "Done" << std::endl;
-        _getch();
+    std::ofstream ofile(hosts_file);
+    for (auto& hl : all_host_lines) {
+        ofile << hl << std::endl;
     }
-    std::cout << "Please run as admin" << std::endl;
-    _getch();
+    ofile.close();
+    logging::Log("Analytics blocked successfully");
 }
+
+
+
+int main() {
+    logging::logInit("logging started at ");
+    std::cout << "Vrchat Analytics Blocker" << std::endl;
+    std::cout << "Press any key to continue..." << std::endl;
+    _getch();
+    BlockAnalytics();
+    _getch();
+    return 0;
+}
+
